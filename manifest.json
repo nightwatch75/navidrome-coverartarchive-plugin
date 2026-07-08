@@ -1,0 +1,16 @@
+{
+  "name": "coverartarchive",
+  "author": "santajellyfe",
+  "version": "1.0.0",
+  "description": "Fetches album cover art from the Cover Art Archive (MusicBrainz)",
+  "website": "https://coverartarchive.org",
+  "permissions": {
+    "http": {
+      "reason": "Look up releases on MusicBrainz and fetch album cover art from the Cover Art Archive",
+      "requiredHosts": [
+        "musicbrainz.org",
+        "coverartarchive.org"
+      ]
+    }
+  }
+}

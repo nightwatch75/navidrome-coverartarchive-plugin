@@ -1,0 +1,11 @@
+# Build output
+plugin.wasm
+*.wasm
+
+# Local build scratch
+/build/
+navidrome-src/
+
+# OS / editor
+Thumbs.db
+.DS_Store
