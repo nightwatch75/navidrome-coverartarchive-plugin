@@ -1,104 +1,138 @@
-# Navidrome Cover Art Archive plugin
+# navidrome-coverartarchive-plugin
 
-A Navidrome metadata plugin that resolves **album cover art** from the
-[Cover Art Archive](https://coverartarchive.org) (CAA) using
-[MusicBrainz](https://musicbrainz.org) for lookup.
+**Album cover art for Navidrome — from MusicBrainz and the Cover Art Archive.**
 
-It complements agents like Apple Music and Deezer: when those don't have art for
-an album (common for obscure, non-commercial, or self-released records — e.g.
-things pulled in from Soulseek), this plugin fills the gap from the
-MusicBrainz/CAA ecosystem.
+A free, open-source Navidrome metadata plugin (`.ndp`) that fills album-art gaps
+left by Apple Music, Deezer, and other commercial catalogs. Ideal for obscure,
+non-commercial, or self-released music (including downloads from Soulseek).
+
+| | |
+| --- | --- |
+| **What it does** | Resolves album cover art via MusicBrainz lookup → Cover Art Archive |
+| **What it does not do** | Artist photos, lyrics, biographies, or scrobbling |
+| **Cost** | Free — MusicBrainz + CAA are free; no API keys |
+| **Navidrome** | v0.62.0+ (plugin system / WASM metadata agents) |
+| **Download** | [`dist/coverartarchive.ndp`](dist/coverartarchive.ndp) — drop in, enable, done |
+
+## Why this exists
+
+Navidrome's built-in agents and popular plugins (Apple Music, Deezer) cover
+mainstream releases well. They often miss:
+
+- Obscure or niche releases
+- Self-released / Bandcamp-only albums
+- Mis-tagged or inconsistently named files from P2P sources
+- Anything well catalogued on MusicBrainz but absent from iTunes/Deezer
+
+The [Cover Art Archive](https://coverartarchive.org) is the canonical open
+artwork repository for MusicBrainz. This plugin queries it so Symfonium,
+Finamp, and the Navidrome web UI show real cover art for those albums.
+
+## Quick install
+
+1. Download [`dist/coverartarchive.ndp`](dist/coverartarchive.ndp).
+2. Copy it to your Navidrome plugins folder (`<DataFolder>/plugins`).
+3. Add `coverartarchive` to your agent chain in `navidrome.toml`:
+
+   ```toml
+   Agents = "apple-music,coverartarchive,deezer"
+   ```
+
+   Place it **after** your primary commercial source so CAA acts as a fallback.
+
+4. Open Navidrome → **Settings → Plugins** → enable **coverartarchive**.
+
+No restart required. Navidrome's file watcher discovers new `.ndp` files
+automatically (they start disabled until you toggle them on).
 
 ## How it works
 
-`GetAlbumImages` is called by Navidrome with the album name, artist, and (if
-known) a MusicBrainz ID. The plugin then:
+When Navidrome needs album art, it calls the plugin's `GetAlbumImages` with the
+album name, artist, and optional MusicBrainz ID:
 
-1. If Navidrome already knows an MBID, it queries CAA directly
-   (`/release/{mbid}`, then `/release-group/{mbid}`).
-2. Otherwise it searches MusicBrainz for the best matching **release-group**
-   (`/ws/2/release-group/?query=releasegroup:"…" AND artist:"…"`).
-3. It fetches the CAA listing for that entity and returns the **front cover** in
-   the sizes CAA provides: 250 px, 500 px, 1200 px, plus the full-resolution
-   original (`size = 0`, which tells Navidrome it's the largest available).
+1. **Known MBID** → query CAA directly (`/release/{mbid}`, then `/release-group/{mbid}`).
+2. **No MBID** → search MusicBrainz for the best matching release-group
+   (`releasegroup:"Album" AND artist:"Artist"`).
+3. Return the **front cover** from CAA in 250 / 500 / 1200 px plus full resolution.
 
-All outbound HTTP goes through Navidrome's `http_send` host service; the plugin
-only talks to `musicbrainz.org` and `coverartarchive.org` (see `manifest.json`).
+Outbound HTTP is restricted to `musicbrainz.org` and `coverartarchive.org`
+(see `manifest.json`). Navidrome caches agent results.
 
-## Layout
+## Verify it's working
 
-| File | Purpose |
-| --- | --- |
-| `main.go` | Plugin source (implements `metadata.AlbumImagesProvider`). |
-| `manifest.json` | Plugin manifest + HTTP host allow-list. |
-| `go.mod` / `go.sum` | Module definition. Requires the Navidrome Go PDK. |
-| `dist/coverartarchive.ndp` | Prebuilt package (Navidrome v0.62.0 ABI). |
-| `tools/harness/` | Standalone Extism runner that executes the built `.wasm` with a real `http_send` implementation — verifies the plugin end-to-end without a running Navidrome. |
-| `build.ps1` | Reproducible build: fetches the pinned Navidrome source, compiles, and packages the `.ndp`. |
+**In Navidrome:** pick an album that Apple Music/Deezer miss but MusicBrainz
+knows. After enabling the plugin, art should appear in the web UI and Subsonic
+clients (Symfonium, etc.). You may need to refresh or re-open the album once.
 
-## Building
-
-The plugin depends on Navidrome's Go PDK (`github.com/navidrome/navidrome/plugins/pdk/go`),
-which lives inside the Navidrome source tree. The simplest path is to build it
-inside a Navidrome source checkout at the version matching your server (the host
-ABI must match).
-
-Requirements: Go 1.24+ (no TinyGo/LLVM needed — standard Go can target
-`wasip1` with `-buildmode=c-shared`).
-
-```powershell
-# One-shot reproducible build (downloads Navidrome source, builds, packages):
-./build.ps1
-```
-
-Or manually, inside a Navidrome checkout:
-
-```bash
-# Copy main.go, manifest.json, go.mod into navidrome/plugins/examples/coverartarchive-go/
-cd navidrome/plugins/examples/coverartarchive-go
-GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o plugin.wasm .
-# Package: a .ndp is just a zip of manifest.json + plugin.wasm at the root
-zip -j coverartarchive.ndp manifest.json plugin.wasm
-```
-
-## Installing
-
-1. Copy `coverartarchive.ndp` into your Navidrome plugins folder
-   (`<DataFolder>/plugins`, e.g. `C:\Navidrome\data\plugins`). Navidrome's file
-   watcher discovers it automatically (added **disabled**).
-2. Add `coverartarchive` to the `Agents` list in `navidrome.toml`, in priority
-   order — e.g. after your primary art source:
-
-   ```toml
-   Agents = "artist-nfo-metadata,apple-music,coverartarchive,deezer,spotify,lastfm"
-   ```
-
-3. Enable the plugin in **Settings → Plugins** in the Navidrome web UI (or via
-   the admin API). It loads live; no restart required.
-
-## Verifying
-
-The harness runs the actual `.wasm` through the Extism runtime (the same one
-Navidrome uses), providing a real `http_send` backed by `net/http`:
+**Standalone (no Navidrome needed):**
 
 ```powershell
 cd tools/harness
-go run . ..\..\dist\plugin.wasm   # or a freshly built plugin.wasm
+go run . ..\..\dist\coverartarchive.ndp   # extracts and runs plugin.wasm
 ```
 
-Expected output resolves real CAA URLs, e.g. for *OK Computer* by *Radiohead*:
+Or point at a freshly built `plugin.wasm`. Expected output includes real CAA URLs:
 
 ```
-size=250   https://coverartarchive.org/release/.../-250.jpg
-size=500   https://coverartarchive.org/release/.../-500.jpg
-size=1200  https://coverartarchive.org/release/.../-1200.jpg
-size=0     https://coverartarchive.org/release/....png
+=== GetAlbumImages: "OK Computer" by "Radiohead" ===
+  RESULT: 4 image(s):
+    size=250   https://coverartarchive.org/release/.../-250.jpg
+    size=500   https://coverartarchive.org/release/.../-500.jpg
+    size=1200  https://coverartarchive.org/release/.../-1200.jpg
+    size=0     https://coverartarchive.org/release/....png
 ```
+
+## Build from source
+
+Requires Go 1.24+ (standard Go — no TinyGo). The plugin must be built against
+the Navidrome PDK version matching your server (ABI compatibility).
+
+```powershell
+./build.ps1
+```
+
+Output: `dist/coverartarchive.ndp`.
+
+Manual build details and project layout are in the sections below.
+
+## Project layout
+
+| Path | Purpose |
+| --- | --- |
+| `main.go` | Plugin source (`metadata.AlbumImagesProvider`) |
+| `manifest.json` | Navidrome plugin manifest + HTTP allow-list |
+| `dist/coverartarchive.ndp` | Prebuilt binary for Navidrome v0.62.0 |
+| `build.ps1` | Reproducible build script |
+| `tools/harness/` | Extism test runner (same WASM runtime as Navidrome) |
+
+## Agent priority
+
+Order in `Agents` matters — Navidrome tries sources left-to-right and stops at
+the first hit. Recommended:
+
+```toml
+Agents = "artist-nfo-metadata,apple-music,coverartarchive,deezer,spotify,lastfm"
+```
+
+- **apple-music** / **deezer** — fast, good for mainstream catalog
+- **coverartarchive** — fallback for MusicBrainz-catalogued releases they miss
 
 ## Notes
 
-- MusicBrainz rate-limits to ~1 request/sec and requires a descriptive
-  `User-Agent`; both are handled. Navidrome caches agent results, so live usage
-  stays well within limits.
-- Cover Art Archive image URLs 307-redirect to `archive.org`; Navidrome follows
-  these when fetching artwork.
+- MusicBrainz rate-limits to ~1 req/sec; the plugin sends a proper
+  `User-Agent`. Navidrome's cache keeps live usage well within limits.
+- CAA image URLs redirect to `archive.org`; Navidrome follows these when
+  fetching artwork.
+- Plugin ID (and agent name) is **`coverartarchive`** — derived from the
+  `.ndp` filename, not the manifest display name.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+## Links
+
+- [Navidrome](https://www.navidrome.org/)
+- [Navidrome plugin docs](https://www.navidrome.org/docs/developers/plugins/)
+- [Cover Art Archive](https://coverartarchive.org/)
+- [MusicBrainz](https://musicbrainz.org/)
