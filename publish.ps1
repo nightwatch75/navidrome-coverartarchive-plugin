@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 $env:Path = "C:\gotools\mingit\cmd;C:\Program Files\GitHub CLI;$env:Path"
 
 $repoName = 'navidrome-coverartarchive-plugin'
-$desc = 'Navidrome plugin: album cover art from MusicBrainz + Cover Art Archive (fallback for obscure/self-released music)'
+$desc = 'Navidrome plugin: album cover art from MusicBrainz + Cover Art Archive (canonical open artwork; agent order controls priority)'
 $topics = 'navidrome,navidrome-plugin,musicbrainz,cover-art-archive,album-art,wasm,go,self-hosted,music-server'
 
 Set-Location $PSScriptRoot

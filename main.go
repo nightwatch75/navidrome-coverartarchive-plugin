@@ -1,9 +1,9 @@
 // Cover Art Archive plugin for Navidrome.
 //
-// Resolves album cover art by looking up the release/release-group on
-// MusicBrainz and fetching the front cover from the Cover Art Archive (CAA).
-// This complements agents like Apple Music and Deezer by covering obscure or
-// non-commercial releases that only exist in the MusicBrainz/CAA ecosystem.
+// Resolves album cover art by looking up releases on MusicBrainz and fetching
+// images from the Cover Art Archive (CAA). Navidrome calls this agent when it
+// needs album art; which agents run and in what order is controlled by the
+// Agents list in navidrome.toml (first successful hit wins).
 //
 // Build with (standard Go 1.24+):
 //

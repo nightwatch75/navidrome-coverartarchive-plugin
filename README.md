@@ -2,9 +2,9 @@
 
 **Album cover art for Navidrome — from MusicBrainz and the Cover Art Archive.**
 
-A free, open-source Navidrome metadata plugin (`.ndp`) that fills album-art gaps
-left by Apple Music, Deezer, and other commercial catalogs. Ideal for obscure,
-non-commercial, or self-released music (including downloads from Soulseek).
+A free, open-source Navidrome metadata plugin (`.ndp`) that resolves album cover
+art from **MusicBrainz + the Cover Art Archive**. Works for mainstream and obscure
+releases alike — anything catalogued in MusicBrainz/CAA.
 
 | | |
 | --- | --- |
@@ -16,17 +16,14 @@ non-commercial, or self-released music (including downloads from Soulseek).
 
 ## Why this exists
 
-Navidrome's built-in agents and popular plugins (Apple Music, Deezer) cover
-mainstream releases well. They often miss:
-
-- Obscure or niche releases
-- Self-released / Bandcamp-only albums
-- Mis-tagged or inconsistently named files from P2P sources
-- Anything well catalogued on MusicBrainz but absent from iTunes/Deezer
-
 The [Cover Art Archive](https://coverartarchive.org) is the canonical open
-artwork repository for MusicBrainz. This plugin queries it so Symfonium,
-Finamp, and the Navidrome web UI show real cover art for those albums.
+artwork repository for MusicBrainz — community-sourced, free, no API keys.
+Commercial agents (Apple Music, Deezer) cover a different catalog and often miss
+obscure, self-released, or P2P-sourced albums that MusicBrainz knows well.
+
+This plugin queries MusicBrainz and CAA directly whenever Navidrome asks it for
+album art. It is not inherently a “fallback” — **where you place it in the
+`Agents` list controls priority** (see [Agent priority](#agent-priority)).
 
 ## Quick install
 
@@ -35,10 +32,12 @@ Finamp, and the Navidrome web UI show real cover art for those albums.
 3. Add `coverartarchive` to your agent chain in `navidrome.toml`:
 
    ```toml
-   Agents = "apple-music,coverartarchive,deezer"
+   Agents = "artist-nfo-metadata,coverartarchive,apple-music,deezer"
    ```
 
-   Place it **after** your primary commercial source so CAA acts as a fallback.
+   **Order matters.** Navidrome tries agents left-to-right and uses the first
+   album-art hit. Put `coverartarchive` **early** to prefer CAA art; put it
+   **later** to prefer Apple Music/Deezer first.
 
 4. Open Navidrome → **Settings → Plugins** → enable **coverartarchive**.
 
@@ -107,15 +106,27 @@ Manual build details and project layout are in the sections below.
 
 ## Agent priority
 
-Order in `Agents` matters — Navidrome tries sources left-to-right and stops at
-the first hit. Recommended:
+Navidrome calls agents **in order** and **stops at the first success** for album
+art. The plugin always queries MusicBrainz + CAA when it is reached; it cannot
+run in parallel with other agents in the same lookup.
+
+| Goal | Suggested `Agents` order |
+| --- | --- |
+| Prefer canonical CAA art when available | `coverartarchive` before `apple-music`, `deezer` |
+| Prefer commercial catalogs, use CAA when they miss | `apple-music`, `deezer` before `coverartarchive` |
+| CAA only (no commercial agents) | `coverartarchive` alone or with `artist-nfo-metadata` |
+
+Example (CAA-first — recommended if you want MusicBrainz art whenever it exists):
 
 ```toml
-Agents = "artist-nfo-metadata,apple-music,coverartarchive,deezer,spotify,lastfm"
+Agents = "artist-nfo-metadata,coverartarchive,apple-music,deezer,spotify,lastfm"
 ```
 
-- **apple-music** / **deezer** — fast, good for mainstream catalog
-- **coverartarchive** — fallback for MusicBrainz-catalogued releases they miss
+Example (commercial-first — CAA only when iTunes/Deezer have nothing):
+
+```toml
+Agents = "artist-nfo-metadata,apple-music,deezer,coverartarchive,spotify,lastfm"
+```
 
 ## Notes
 
