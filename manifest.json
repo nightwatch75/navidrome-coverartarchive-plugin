@@ -3,7 +3,7 @@
   "author": "santajellyfe",
   "version": "1.0.0",
   "description": "Album cover art from MusicBrainz + Cover Art Archive — fills gaps left by Apple Music/Deezer for obscure or self-released music",
-  "website": "https://github.com/santajellyfe/navidrome-coverartarchive-plugin",
+  "website": "https://github.com/sunsetroute1/navidrome-coverartarchive-plugin",
   "permissions": {
     "http": {
       "reason": "Look up releases on MusicBrainz and fetch album cover art from the Cover Art Archive",

@@ -24,7 +24,7 @@ import (
 
 // MusicBrainz requires a descriptive User-Agent with contact info, otherwise it
 // rate-limits or blocks the request.
-const userAgent = "navidrome-coverartarchive-plugin/1.0.0 ( https://github.com/santajellyfe/navidrome-coverartarchive-plugin )"
+const userAgent = "navidrome-coverartarchive-plugin/1.0.0 ( https://github.com/sunsetroute1/navidrome-coverartarchive-plugin )"
 
 type caaPlugin struct{}
 
