@@ -54,8 +54,8 @@ album name, artist, and optional MusicBrainz ID:
    (`releasegroup:"Album" AND artist:"Artist"`).
 3. Return the **front cover** from CAA in 250 / 500 / 1200 px plus full resolution.
 
-Outbound HTTP is restricted to `musicbrainz.org` and `coverartarchive.org`
-(see `manifest.json`). Navidrome caches agent results.
+Outbound HTTP is restricted to `musicbrainz.org`, `coverartarchive.org` and
+`archive.org` (CAA redirects image requests there; see `manifest.json`). Navidrome caches agent results.
 
 ## Verify it's working
 
